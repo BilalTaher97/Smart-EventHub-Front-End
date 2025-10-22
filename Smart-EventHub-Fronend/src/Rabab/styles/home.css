@@ -805,7 +805,10 @@
     margin-top: 20px;
 }
 
-.home-page .profile .email {
+.home-page .profile .email ,
+.home-page .profile .gender ,
+.home-page .profile .phone
+{
     font-size: 14px;
     font-weight: 600
 }

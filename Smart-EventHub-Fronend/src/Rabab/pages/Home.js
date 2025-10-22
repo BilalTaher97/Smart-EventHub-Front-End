@@ -270,6 +270,8 @@ export default function Home() {
         </button>
         <span className="name mt-3">Manar Al-Omari</span>
         <span className="email">manar.omari@gmail.com</span>
+        <span className="gender">Female</span>
+        <span className="phone">0797620470</span>
       
       <div className="d-flex flex-row justify-content-center align-items-center mt-3">
         <span className="number">50
@@ -286,7 +288,7 @@ export default function Home() {
       </div>
 
       <button className="logout" onClick={()=>{
-
+          navigate("/");
       }}>Logout</button>
   </div>
 </div>
