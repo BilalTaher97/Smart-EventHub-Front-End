@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import "../styles/signup-login.css";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 export default function AuthForm() {
   const [loginEmail, setLoginEmail] = useState("");
@@ -21,57 +22,35 @@ export default function AuthForm() {
     return () => document.body.classList.remove("login-page");
   }, []);
 
-  // Login handler with API request
   const handleLogin = async (e) => {
     e.preventDefault();
-
     if (!loginEmail || !loginPassword) {
       alert("Enter email and password");
       return;
     }
 
-    const loginData = {
-      email: loginEmail,
-      passwordHash: loginPassword
-    };
-
     try {
-      console.log("Login data", loginEmail, loginPassword);
-
-      const response = await fetch("http://localhost:3000/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(loginData),
+      const response = await axios.post("http://localhost:3000/api/auth/login", {
+        email: loginEmail,
+        passwordHash: loginPassword,
       });
 
-      const data = await response.json();
+      const data = response.data;
+      localStorage.setItem("accessToken", data.accessToken);
+      localStorage.setItem("userEmail", loginEmail);
+      localStorage.setItem("userId", data.userId);
+      navigate(data.redirectUrl || "/home");
 
-      if (response.ok) {
-        localStorage.setItem("accessToken", data.accessToken);
-        localStorage.setItem("userEmail",data.email);
-        localStorage.setItem("useruserId",data.userId);
-        navigate(data.redirectUrl || "/home");
-      } else {
-        alert(data.message || "Login failed");
-      }
     } catch (error) {
       console.error(error);
-      alert("Something went wrong");
+      alert(error.response?.data?.message || "Login failed");
     }
   };
 
-  // Signup handler with API request
   const handleSignup = async (e) => {
     e.preventDefault();
 
-    if (
-      !signupName ||
-      !signupEmail ||
-      !signupPassword ||
-      !signupConfirm ||
-      !signupGender ||
-      !signupPhone
-    ) {
+    if (!signupName || !signupEmail || !signupPassword || !signupConfirm || !signupGender || !signupPhone) {
       alert("Fill all fields");
       return;
     }
@@ -80,6 +59,19 @@ export default function AuthForm() {
       alert("Enter a valid phone number (starts with 07 and has 10 digits)");
       return;
     }
+
+    // Email validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(signupEmail)) {
+    alert("Enter a valid email address");
+    return;
+  }
+
+  // Password length validation
+  if (signupPassword.length < 6 || signupPassword.length > 25) {
+    alert("Password must be between 6 and 25 characters");
+    return;
+  }
 
     if (signupPassword !== signupConfirm) {
       alert("Passwords do not match");
@@ -103,26 +95,23 @@ export default function AuthForm() {
     };
 
     try {
-      console.log("Signup data", signupName, signupEmail, signupPassword, signupGender, signupPhone, signupPasskey);
-      const response = await fetch("http://localhost:3000/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(userData),
-      });
+      const response = await axios.post("http://localhost:3000/api/auth/register", userData);
+      const data = response.data;
+      console.log(data);
+      alert(data.message || "Registered successfully. You can login now.");
 
-      const data = await response.json();
+      // Clear signup form
+  setSignupName("");
+  setSignupEmail("");
+  setSignupPassword("");
+  setSignupConfirm("");
+  setSignupGender("");
+  setSignupPhone("");
+  setSignupPasskey("");
 
-     if (response.ok) {
-        alert(data.message || "Registered successfully");
-        if (signupPasskey === "admin101") navigate("/admin");
-       else navigate("/home");
-      } else {
-        alert(data.message || "Registration failed");
-      }
-     } 
-    catch (error) {
+    } catch (error) {
       console.error(error);
-      alert("Something went wrong");
+      alert(error.response?.data?.message || "Registration failed");
     }
   };
 
@@ -144,7 +133,6 @@ export default function AuthForm() {
               <div className="card-3d-wrap mx-auto">
                 <div className="card-3d-wrapper">
 
-                  {/* Login */}
                   <div className="card-front">
                     <div className="center-wrap">
                       <div className="section text-center">
@@ -176,7 +164,6 @@ export default function AuthForm() {
                     </div>
                   </div>
 
-                  {/* Signup */}
                   <div className="card-back">
                     <div className="center-wrap">
                       <div className="section text-center">
@@ -241,7 +228,6 @@ export default function AuthForm() {
                               value={signupPhone}
                               onChange={(e) => setSignupPhone(e.target.value)}
                             />
-                            
                           </div>
 
                           <div className="form-group">
@@ -264,7 +250,6 @@ export default function AuthForm() {
 
                 </div>
               </div>
-
             </div>
           </div>
         </div>
