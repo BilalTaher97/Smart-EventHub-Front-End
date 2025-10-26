@@ -21,16 +21,47 @@ export default function AuthForm() {
     return () => document.body.classList.remove("login-page");
   }, []);
 
-  const handleLogin = (e) => {
+  // Login handler with API request
+  const handleLogin = async (e) => {
     e.preventDefault();
+
     if (!loginEmail || !loginPassword) {
       alert("Enter email and password");
       return;
     }
-    navigate("/home");
+
+    const loginData = {
+      email: loginEmail,
+      passwordHash: loginPassword
+    };
+
+    try {
+      console.log("Login data", loginEmail, loginPassword);
+
+      const response = await fetch("http://localhost:3000/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(loginData),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        localStorage.setItem("accessToken", data.accessToken);
+        localStorage.setItem("userEmail",data.email);
+        localStorage.setItem("useruserId",data.userId);
+        navigate(data.redirectUrl || "/home");
+      } else {
+        alert(data.message || "Login failed");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Something went wrong");
+    }
   };
 
-  const handleSignup = (e) => {
+  // Signup handler with API request
+  const handleSignup = async (e) => {
     e.preventDefault();
 
     if (
@@ -47,7 +78,7 @@ export default function AuthForm() {
 
     if (!/^07[0-9]{8}$/.test(signupPhone)) {
       alert("Enter a valid phone number (starts with 07 and has 10 digits)");
-    return;
+      return;
     }
 
     if (signupPassword !== signupConfirm) {
@@ -55,17 +86,44 @@ export default function AuthForm() {
       return;
     }
 
-    if (signupPasskey === "admin101") {
-      setSignupRole("admin");
-    } else if (signupPasskey === "") {
-      setSignupRole("user");
-    } else {
-      alert("Invalid passkey. Leave it empty for user registration");
+    let role = "user";
+    if (signupPasskey === "admin101") role = "admin";
+    else if (signupPasskey !== "") {
+      alert("Invalid passkey. Leave empty for user registration");
       return;
     }
 
-    console.log("Role:", signupRole);
-    navigate("/home");
+    const userData = {
+      fullName: signupName,
+      email: signupEmail,
+      passwordHash: signupPassword,
+      phone: signupPhone,
+      gender: signupGender,
+      role: role,
+    };
+
+    try {
+      console.log("Signup data", signupName, signupEmail, signupPassword, signupGender, signupPhone, signupPasskey);
+      const response = await fetch("http://localhost:3000/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(userData),
+      });
+
+      const data = await response.json();
+
+     if (response.ok) {
+        alert(data.message || "Registered successfully");
+        if (signupPasskey === "admin101") navigate("/admin");
+       else navigate("/home");
+      } else {
+        alert(data.message || "Registration failed");
+      }
+     } 
+    catch (error) {
+      console.error(error);
+      alert("Something went wrong");
+    }
   };
 
   return (
@@ -78,7 +136,7 @@ export default function AuthForm() {
                 <span>Log In </span>
                 <span>Sign Up</span>
               </h6>
-              <input className="checkbox" type="checkbox" id="reg-log" name="reg-log" />
+              <input className="checkbox" type="checkbox" id="reg-log" />
               <label htmlFor="reg-log">
                 <i className="uil uil-arrow-up"></i>
               </label>
@@ -119,103 +177,94 @@ export default function AuthForm() {
                   </div>
 
                   {/* Signup */}
-                 <div className="card-back">
-  <div className="center-wrap">
-    <div className="section text-center">
-      <h4 className="mb-4 pb-3">Sign Up</h4>
+                  <div className="card-back">
+                    <div className="center-wrap">
+                      <div className="section text-center">
+                        <h4 className="mb-4 pb-3">Sign Up</h4>
 
-      <div className="signup-grid">
-        <div className="form-group">
-          <input
-            type="text"
-            className="form-style"
-            placeholder="Full Name"
-            value={signupName}
-            onChange={(e) => setSignupName(e.target.value)}
-          />
-          <i className="input-icon uil uil-user"></i>
-        </div>
+                        <div className="signup-grid">
+                          <div className="form-group">
+                            <input
+                              type="text"
+                              className="form-style"
+                              placeholder="Full Name"
+                              value={signupName}
+                              onChange={(e) => setSignupName(e.target.value)}
+                            />
+                            <i className="input-icon uil uil-user"></i>
+                          </div>
 
-        <div className="form-group">
-          <input
-            type="email"
-            className="form-style"
-            placeholder="Email"
-            value={signupEmail}
-            onChange={(e) => setSignupEmail(e.target.value)}
-          />
-          <i className="input-icon uil uil-at"></i>
-        </div>
+                          <div className="form-group">
+                            <input
+                              type="email"
+                              className="form-style"
+                              placeholder="Email"
+                              value={signupEmail}
+                              onChange={(e) => setSignupEmail(e.target.value)}
+                            />
+                            <i className="input-icon uil uil-at"></i>
+                          </div>
 
-        <div className="form-group two-cols">
-          <div style={{ position: "relative" }}>
-            <input
-              type="password"
-              className="form-style"
-              placeholder="Password"
-              value={signupPassword}
-              onChange={(e) => setSignupPassword(e.target.value)}
-            />
-            <i className="input-icon uil uil-lock-alt"></i>
-          </div>
-          <div style={{ position: "relative" }}>
-            <input
-              type="password"
-              className="form-style"
-              placeholder="Confirm"
-              value={signupConfirm}
-              onChange={(e) => setSignupConfirm(e.target.value)}
-            />
-            <i className="input-icon uil uil-lock-alt"></i>
-          </div>
-        </div>
+                          <div className="form-group two-cols">
+                            <i className="input-icon uil uil-lock-alt"></i>
+                            <input
+                              type="password"
+                              className="form-style"
+                              placeholder="Password"
+                              value={signupPassword}
+                              onChange={(e) => setSignupPassword(e.target.value)}
+                            />
+                            <input
+                              type="password"
+                              className="form-style"
+                              placeholder="Confirm"
+                              value={signupConfirm}
+                              onChange={(e) => setSignupConfirm(e.target.value)}
+                            />
+                          </div>
 
-        <div className="form-group two-cols">
-          <div style={{ position: "relative" }}>
-            <select
-              className="form-style"
-              value={signupGender}
-              onChange={(e) => setSignupGender(e.target.value)}
-            >
-              <option value="">Gender</option>
-              <option value="female">F</option>
-              <option value="male">M</option>
-            </select>
-          </div>
-          <div style={{ position: "relative" }}>
-           <input
-            type="text"
-            className="form-style"
-            placeholder="Phone (07XXXXXXXX)"
-            value={signupPhone}
-            onChange={(e) => setSignupPhone(e.target.value)}
-            pattern="^07[0-9]{8}$"
-            />
-            <i className="input-icon uil uil-phone"></i>
-          </div>
-        </div>
+                          <div className="form-group two-cols">
+                            <select
+                              className="form-style"
+                              value={signupGender}
+                              onChange={(e) => setSignupGender(e.target.value)}
+                            >
+                              <option value="">Gender</option>
+                              <option value="female">F</option>
+                              <option value="male">M</option>
+                            </select>
+                            <i className="uil uil-phone" style={{position:'absolute',left:"54%",fontSize:"24px",color:"white"}}></i>
+                            <input
+                              type="text"
+                              className="form-style"
+                              placeholder="Phone (07XXXXXXXX)"
+                              value={signupPhone}
+                              onChange={(e) => setSignupPhone(e.target.value)}
+                            />
+                            
+                          </div>
 
-        <div className="form-group">
-          <input
-            type="text"
-            className="form-style"
-            placeholder="Passkey (optional)"
-            value={signupPasskey}
-            onChange={(e) => setSignupPasskey(e.target.value)}
-          />
-          <i className="input-icon uil uil-key-skeleton"></i>
-        </div>
-      </div>
+                          <div className="form-group">
+                            <input
+                              type="text"
+                              className="form-style"
+                              placeholder="Passkey (optional)"
+                              value={signupPasskey}
+                              onChange={(e) => setSignupPasskey(e.target.value)}
+                            />
+                          </div>
+                        </div>
 
-      <button className="btn mt-4" onClick={handleSignup}>
-        Submit
-      </button>
-    </div>
-  </div>
-</div>
+                        <button className="btn mt-4" onClick={handleSignup}>
+                          Submit
+                        </button>
+                      </div>
+                    </div>
+                  </div>
 
                 </div>
               </div>
+
             </div>
           </div>
         </div>

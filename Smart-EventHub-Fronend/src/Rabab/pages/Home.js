@@ -1,12 +1,12 @@
 import "../styles/home.css";
 import aboutImg from "../images/Our Servese.png";
-import firstSpeacker from "../images/speaker.png";
+import firstSpeacker from "../images/mic.png";
 import user1 from "../images/1.jpg";
 import user2 from "../images/2.jpg";
 import user3 from "../images/3.jpg";
 import user4 from "../images/4.jpg";
 import { useNavigate } from "react-router-dom";
-import secondSpeacker from "../images/speaker2.png";
+// import secondSpeacker from "../images/speaker2.png";
 import React, {  useRef,useEffect, useState } from "react";
 
 export default function Home() {
@@ -14,12 +14,29 @@ export default function Home() {
   const [activeLink, setActiveLink] = useState("Home");
   const [showProfile, setShowProfile] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
+  const [user, setUser] = useState(null);
+  const [latestEvents, setLatestEvents] = useState([]);
+  const [editForm, setEditForm] = useState({
+    fullName: "",
+    passwordHash: "",
+    phone: "",
+    gender: ""
+  });
   const navigate = useNavigate();
 
   const goToEvents = () => {
     navigate("./events");
   };
   
+  useEffect(() => {
+  fetch("http://localhost:3000/api/events/latest")
+    .then(res => res.json())
+    .then(data => {
+      if (data && data.data) setLatestEvents(data.data);
+    })
+    .catch(err => console.error("Error fetching latest events:", err));
+}, []);
+
   // to know the page that you where in
   useEffect(() => {
     document.body.classList.add("home-page");
@@ -73,6 +90,36 @@ export default function Home() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  useEffect(() => {
+  if (showProfile) {
+    const token = localStorage.getItem("accessToken");
+    // if (!token) return navigate("/");
+
+    fetch("http://localhost:3000/api/auth/profile", {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json"
+      }
+    })
+      .then(res => res.json())
+      .then(data => {
+        setUser(data);
+        setEditForm({
+          fullName: data.fullName || "",
+          passwordHash: "",
+          phone: data.phone || "",
+          gender: data.gender || ""
+        });
+      })
+      .catch(err => {
+        console.error(err);
+        alert("Failed to load profile");
+      });
+  }
+}, [showProfile]);
+
 
   return (
     <div className="container">
@@ -179,83 +226,64 @@ export default function Home() {
 
   {/* events section */}
    <section className="events" id="events">
-    <div className="container">
+  <div className="container">
     <h2 className="title">Our Events</h2>
-    <div className="bussinesscard-container">
-      <div className="col-lg-3 col-md-4 col-sm-6 mb-4">
-        <div className="bussinesscard">
-          <div className="flip">
-            <div className="front">
-              <div className="top">
-                <div className="logo">Tech Innovation Summit
-                  <div className="event-theme"><em>Future of AI and Cloud</em></div>
-                </div>
-              </div>
-              <div className="nametroduction">
-                <div className="name">John Carter
-                  <div><button>Join us</button></div>
-                  <img src={firstSpeacker} alt=""/></div>
-              </div>
-              <div className="contact">
-                <div className="desc">
-                  <span><i className="fa-solid fa-microphone"></i></span>
-                  <span>Learn about the latest developments in artificial intelligence and how cloud computing transforms digital infrastructure.</span>
-                </div>
-                <div className="location" style={{marginTop:'15px'}}>
-                  <span><i className="fa-solid fa-location-dot"></i></span>
-                  <span>Grand Hall, Tech Center</span>
-                </div>
-                <div className="time" style={{marginTop:'15px'}}>
-                  <span><i className="fa-solid fa-clock"></i></span>
-                  <span>25 Nov 2025 / 10:00 AM - 12:00 PM</span>
-                </div>
-              </div>
-            </div>
-            <div className="back"></div>
-          </div>
-        </div>
-      </div>
-    </div>
 
-    <div className="bussinesscard-container">
-      <div className="col-lg-3 col-md-4 col-sm-6 mb-4">
-        <div className="bussinesscard">
-          <div className="flip">
-            <div className="front">
-              <div className="top">
-                <div className="logo">Women in Engineering Panel
-                  <div className="event-theme"><em>Empowering Future Leaders</em></div>
-                </div>
-              </div>
-              <div className="nametroduction">
-                <div className="name">Dr. Aisha Karim
-                  <div><button>Join us</button></div>
-                  <img className="img-fluid" src={secondSpeacker} alt=""/>
+    {latestEvents.map((event) => (
+      <div className="bussinesscard-container" key={event.eventId}>
+        <div className="col-lg-3 col-md-4 col-sm-6 mb-4">
+          <div className="bussinesscard">
+            <div className="flip">
+              <div className="front">
+                <div className="top">
+                  <div className="logo">
+                    {event.title}
+                    <div className="event-theme">
+                      <em>{event.description}</em>
+                    </div>
                   </div>
+                </div>
+                <div className="nametroduction">
+                  <div className="name">
+                    Created By {event.createdBy}
+                    <div>
+                      <button>Join us</button>
+                    </div>
+                    <img src={firstSpeacker} alt="" />
+                  </div>
+                </div>
+                <div className="contact">
+                  <div className="desc">
+                    <span><i className="fa-solid fa-microphone"></i></span>
+                    <span>{event.description}</span>
+                  </div>
+
+                  <div className="location" style={{ marginTop: "15px" }}>
+                    <span><i className="fa-solid fa-location-dot"></i></span>
+                    <span>{event.location}</span>
+                  </div>
+
+                  <div className="time" style={{ marginTop: "15px" }}>
+                    <span><i className="fa-solid fa-clock"></i></span>
+                    <span>{event.startDate} - {event.endDate}</span>
+                  </div>
+                </div>
               </div>
-              <div className="contact">
-                <div className="desc">
-                  <span><i className="fa-solid fa-microphone"></i></span>
-                  <span>A hands-on session to explore techniques for approaching challenges with a user-centered design mindset.</span>
-                </div>
-                <div className="location" style={{marginTop:'15px'}}>
-                  <span><i className="fa-solid fa-location-dot"></i></span>
-                  <span>Auditorium, Block C</span>
-                </div>
-                <div className="time" style={{marginTop:'15px'}}>
-                  <span><i className="fa-solid fa-clock"></i></span>
-                  <span>26 Nov 2025 / 11:00 AM - 1:00 PM</span>
-                </div>
-              </div>
+              <div className="back"></div>
             </div>
-            <div className="back"></div>
           </div>
         </div>
       </div>
+    ))}
+
+    <div className="all-events">
+      <button onClick={() => goToEvents()}>
+        see all <i className="fa-solid fa-arrow-right"></i>
+      </button>
     </div>
   </div>
-  <div className="all-events"><button onClick={()=>goToEvents()}>see all  <i className="fa-solid fa-arrow-right"></i></button></div>
 </section>
+
 
 {/* profile section */}
 <section id="profile" className={`profile ${showProfile ? "show-profile" : ""}`}>
@@ -268,10 +296,14 @@ export default function Home() {
         <button className="btn btn-secondary">
           <img src="https://i.imgur.com/wvxPV9S.png" height="100" width="100" />
         </button>
-        <span className="name mt-3">Manar Al-Omari</span>
-        <span className="email">manar.omari@gmail.com</span>
-        <span className="gender">Female</span>
-        <span className="phone">0797620470</span>
+        {user && (
+            <>
+            <span className="name mt-3">{user.fullName}</span>
+            <span className="email">{user.email}</span>
+            <span className="gender">{user.gender}</span>
+            <span className="phone">{user.phone}</span>
+            </>
+        )}
       
       <div className="d-flex flex-row justify-content-center align-items-center mt-3">
         <span className="number">50
@@ -287,35 +319,98 @@ export default function Home() {
                     }}>Edit Profile</button>
       </div>
 
-      <button className="logout" onClick={()=>{
-          navigate("/");
-      }}>Logout</button>
+      <button
+  className="logout"
+  onClick={() => {
+    localStorage.removeItem("accessToken");
+    navigate("/");
+  }}
+>
+  Logout
+</button>
   </div>
 </div>
 </div>
 </section>
 
-{/* edit section */}
-      <div className={`edit-profile ${showEditProfile ? "show-edit-profile" : ""}`} id="edit-profile">
-           <div className="edit-profile-container">
-            <div className="title">
-              Edit My Profile
-              <span>
-             <i className="fa fa-times"
-             onClick={() => {
-                    setShowEditProfile(false);
-                    setShowProfile(false);
-                  }}></i>
-           </span>
-        </div>
-           <form action="#">
-               <input type="text" id="fullName" name="fullName" placeholder="Full Name"/>
-               <input type="text" id="email" name="email" placeholder="Email"/>
-               <input type="file" id="profileImage" name="profileImage"/>
-               <input type="submit" value="Update"/>
-           </form>  
-           </div>
-      </div>
+      {/* edit section */}
+<div className={`edit-profile ${showEditProfile ? "show-edit-profile" : ""}`} id="edit-profile">
+  <div className="edit-profile-container">
+    <div className="title">
+      Edit My Profile
+      <span>
+        <i
+          className="fa fa-times"
+          onClick={() => {
+            setShowEditProfile(false);
+            setShowProfile(false);
+          }}
+        ></i>
+      </span>
+    </div>
+
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        const token = localStorage.getItem("accessToken");
+        if (!token) return alert("Login required");
+
+        fetch("http://localhost:3000/api/auth/update", {
+          method: "PUT",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(editForm),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            alert(data.message || "Profile updated");
+            setShowEditProfile(false);
+            setShowProfile(true);
+          })
+          .catch((err) => {
+            console.error(err);
+            alert("Update failed");
+          });
+      }}
+    >
+      <input
+        type="text"
+        id="fullName"
+        name="fullName"
+        placeholder="Full Name"
+        value={editForm.fullName}
+        onChange={(e) =>
+          setEditForm({ ...editForm, fullName: e.target.value })
+        }
+      />
+
+      <input
+        type="password"
+        id="passwordHash"
+        name="passwordHash"
+        placeholder="New Password"
+        value={editForm.passwordHash}
+        onChange={(e) =>
+          setEditForm({ ...editForm, passwordHash: e.target.value })
+        }
+      />
+
+      <input
+        type="text"
+        id="phone"
+        name="phone"
+        placeholder="Phone"
+        value={editForm.phone}
+        onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+      />
+
+      <input type="submit" value="Update" />
+    </form>
+  </div>
+</div>
+
 
       {/* feedback section */}
          <section className="testimonials" id="feedback">

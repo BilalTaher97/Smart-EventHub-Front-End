@@ -8,100 +8,46 @@ export default function CalendarPage() {
   const [currentMonth, setCurrentMonth] = useState(today.getMonth());
   const [currentYear, setCurrentYear] = useState(today.getFullYear());
   const [selectedOwner, setSelectedOwner] = useState("All");
-  const [showAddEvent, setShowAddEvent] = useState(false);
+  // const [showAddEvent, setShowAddEvent] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
-  const [editingEvent, setEditingEvent] = useState(null);
- const [tasks, setTasks] = useState([
-  {
-    date: "20/Oct/2025",
-    time: "08:30 - 09:00",
-    title: "Daily Standup",
-    color: "#1abc9c",
-    owner: "alice@example.com",
-    details: "Short team sync to review yesterday’s progress, blockers, and priorities for today. Focus on backend fixes and UI refinements."
-  },
-  {
-    date: "18/Oct/2025",
-    time: "09:30 - 10:00",
-    title: "Revision UI Design Landing Page",
-    color: "#f39c12",
-    owner: "bob@example.com",
-    details: "Review updated landing page mockups with the design team. Discuss layout consistency, color scheme, and mobile responsiveness."
-  },
-  {
-    date: "08/Oct/2025",
-    time: "10:30 - 11:30",
-    title: "Duplicate Task",
-    color: "#3498db",
-    owner: "alice@example.com",
-    details: "Verify task duplication logic in the event management system. Test edge cases and log inconsistencies found during QA."
-  },
-  {
-    date: "22/Oct/2025",
-    time: "14:00 - 15:00",
-    title: "Client Presentation",
-    color: "#9b59b6",
-    owner: "alice@example.com",
-    details: "Present the new event management dashboard to the client. Collect feedback on usability and overall user experience."
-  },
-  {
-    date: "23/Oct/2025",
-    time: "11:00 - 12:00",
-    title: "Database Optimization",
-    color: "#e74c3c",
-    owner: "bob@example.com",
-    details: "Optimize SQL queries in the analytics module. Identify slow queries and apply indexing improvements for faster load times."
-  },
-  {
-    date: "25/Oct/2025",
-    time: "16:00 - 17:30",
-    title: "Security Review",
-    color: "#2ecc71",
-    owner: "alice@example.com",
-    details: "Conduct a code-level security audit. Focus on authentication logic, token handling, and permission-based access controls."
-  },
-  {
-    date: "26/Oct/2025",
-    time: "09:00 - 10:00",
-    title: "QA Testing Session",
-    color: "#e67e22",
-    owner: "bob@example.com",
-    details: "Run full regression tests for new feature deployments. Document all bugs in the tracking system for review and fixing."
-  },
-  {
-    date: "28/Oct/2025",
-    time: "13:00 - 14:30",
-    title: "Sprint Planning",
-    color: "#16a085",
-    owner: "alice@example.com",
-    details: "Plan the next sprint tasks, assign owners, and estimate effort levels. Review previous sprint metrics and backlog status."
-  },
-  {
-    date: "30/Oct/2025",
-    time: "15:30 - 17:00",
-    title: "Team Retrospective",
-    color: "#2980b9",
-    owner: "alice@example.com",
-    details: "Reflect on what went well, what didn’t, and how to improve collaboration for the next sprint. Encourage open discussion."
-  },
-  {
-    date: "02/Nov/2025",
-    time: "10:00 - 11:00",
-    title: "Feature Demo Review",
-    color: "#c0392b",
-    owner: "bob@example.com",
-    details: "Demonstrate new calendar integration and event filtering features. Gather internal feedback before production release."
-  }
-]);
+  // const [editingEvent, setEditingEvent] = useState(null);
+  const [tasks, setTasks] = useState([]);
+
+useEffect(() => {
+  fetch("http://localhost:3000/api/events")
+    .then(res => res.json())
+    .then(data => {
+      if (data && data.data) {
+        const mappedTasks = data.data.map(event => {
+          const start = new Date(event.startDate);
+          const end = new Date(event.endDate);
+          const dateStr = `${start.getDate()}/${monthNames[start.getMonth()].slice(0,3)}/${start.getFullYear()}`;
+          const timeStr = `${start.getHours()}:${start.getMinutes().toString().padStart(2,'0')} - ${end.getHours()}:${end.getMinutes().toString().padStart(2,'0')}`;
+          return {
+            date: dateStr,
+            time: timeStr,
+            title: event.title,
+            color: "#1abc9c",
+            owner: event.createdBy,
+            details: event.description,
+            speakers: event.speakers || [],
+            eventId: event.eventId
+          };
+        });
+        setTasks(mappedTasks);
+      }
+    })
+    .catch(err => console.error("Failed to fetch events", err));
+}, []);
 
 
-  const [formData, setFormData] = useState({
-    title: "",
-    details: "",
-    time: "",
-    date: "",
-    owner: "alice@example.com",
-  });
+  // const [formData, setFormData] = useState({
+  //   title: "",
+  //   details: "",
+  //   time: "",
+  //   date: "",
+  //   owner: ""
+  // });
 
   useEffect(() => {
     document.body.classList.add("events-page");
@@ -129,30 +75,30 @@ export default function CalendarPage() {
     return d;
   });
 
-  function handleFormSubmit(e) {
-    e.preventDefault();
+  // function handleFormSubmit(e) {
+  //   e.preventDefault();
 
-    const formattedDate = new Date(formData.date);
-    const dateStr = `${formattedDate.getDate()}/${monthNames[formattedDate.getMonth()].slice(0,3)}/${formattedDate.getFullYear()}`;
+  //   // const formattedDate = new Date(formData.date);
+  //   // const dateStr = `${formattedDate.getDate()}/${monthNames[formattedDate.getMonth()].slice(0,3)}/${formattedDate.getFullYear()}`;
 
-    // if (editingEvent) {
-    //   // update
-    //   setTasks(prev =>
-    //     prev.map(task =>
-    //       task.title === editingEvent.title && task.date === editingEvent.date
-    //         ? { ...formData, date: dateStr, color: task.color }
-    //         : task
-    //     )
-    //   );
-    // } else {
-    //   // add
-    //   setTasks(prev => [...prev, { ...formData, date: dateStr, color: "#1abc9c" }]);
-    // }
+  //   // if (editingEvent) {
+  //   //   // update
+  //   //   setTasks(prev =>
+  //   //     prev.map(task =>
+  //   //       task.title === editingEvent.title && task.date === editingEvent.date
+  //   //         ? { ...formData, date: dateStr, color: task.color }
+  //   //         : task
+  //   //     )
+  //   //   );
+  //   // } else {
+  //   //   // add
+  //   //   setTasks(prev => [...prev, { ...formData, date: dateStr, color: "#1abc9c" }]);
+  //   // }
 
-    setShowAddEvent(false);
-    setEditingEvent(null);
-    setFormData({ title: "", details: "", time: "", date: "", owner: "alice@example.com" });
-  }
+  //   // setShowAddEvent(false);
+  //   // setEditingEvent(null);
+  //   // setFormData({ title: "", details: "", time: "", date: "", owner: "" });
+  // }
 
   return (
     <div className="calendar-page">
@@ -174,13 +120,13 @@ export default function CalendarPage() {
       <main className="calendar-main">
         <div className="calendar-header">
           <h2>Week of {monthNames[currentMonth]} {selectedDate}, {currentYear}</h2>
-          <button onClick={() => {
-            setShowAddEvent(true);
+          {/* <button onClick={() => {
+            // setShowAddEvent(true);
             setEditingEvent(null);
             setFormData({ title: "", details: "", time: "", date: "", owner: "alice@example.com" });
           }}>
             <i className="fa-solid fa-plus"></i>
-          </button>
+          </button> */}
           <div className="calendar-options">
             <button
               className={isTodaySelected ? "active" : ""}
@@ -190,7 +136,7 @@ export default function CalendarPage() {
             </button>
             <select value={selectedOwner} onChange={(e) => setSelectedOwner(e.target.value)}>
               <option value="All">All</option>
-              <option value="alice@example.com">My Events</option>
+              <option value={localStorage.getItem("userId")}>My Events</option>
             </select>
           </div>
         </div>
@@ -227,108 +173,84 @@ export default function CalendarPage() {
           </div>
         </div>
 
-        {showAddEvent && (
-          <section className="add-event">
-            <div className="add-event-container">
-              <div className="title">
-                {editingEvent ? "Edit Event" : "Add Event"}
-                <span>
-                  <i className="fa fa-times" onClick={() => {
-                    setShowAddEvent(false);
-                    setEditingEvent(null);
-                  }}></i>
-                </span>
-              </div>
-              <form onSubmit={handleFormSubmit}>
-                <input
-                  type="text"
-                  placeholder="Event Title"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  required
-                />
-                <input
-                  type="text"
-                  placeholder="Event Details"
-                  value={formData.details}
-                  onChange={(e) => setFormData({ ...formData, details: e.target.value })}
-                  required
-                />
-                <input
-                  type="text"
-                  placeholder="Event Time"
-                  value={formData.time}
-                  onChange={(e) => setFormData({ ...formData, time: e.target.value })}
-                  required
-                />
-                <small>ex. 08:30 - 09:00</small>
-                <input
-                  type="date"
-                  value={formData.date}
-                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                  required
-                />
-                <input type="submit" value={editingEvent ? "Update" : "Add"} />
-              </form>
-            </div>
-          </section>
-        )}
-
-        {selectedEvent && (
-          <div className="container">
-            <div className="event-details">
-              <span className="close" onClick={() => setSelectedEvent(null)}>
-                <i className="fa-solid fa-circle-xmark"></i>
-              </span>
-              <div className="img-fluid">
-                <img src={eventImg} alt="Event" />
-                <span className="date">
-                  <span>{selectedEvent.date.split("/")[0]}</span>
-                  <span>{selectedEvent.date.split("/")[1]}</span>
-                </span>
-              </div>
-              <div className="details">
-                <div className="row">
-                  <div className="name">{selectedEvent.title}</div>
-                  <div className="time">
-                    <i className="fa fa-clock"> {selectedEvent.time}</i>
-                  </div>
-                </div>
-                <div className="row">
-                  <div className="det">{selectedEvent.details}</div>
-                </div>
-                <button
-                  className={`edit-btn ${
-                    selectedEvent.owner === "alice@example.com" ? "active" : ""
-                  }`}
-                  onClick={() => {
-                    if (selectedEvent.owner === "alice@example.com") {
-                      setEditingEvent(selectedEvent);
-                      setFormData({
-                        title: selectedEvent.title,
-                        details: selectedEvent.details,
-                        time: selectedEvent.time,
-                        date: "",
-                        owner: selectedEvent.owner,
-                      });
-                      setShowAddEvent(true);
-                      setSelectedEvent(null);
-                    }
-                  }}
-                >
-                  Edit
-                </button>
-                <button
-                  className={`join-btn ${
-                    selectedEvent.owner !== "alice@example.com" ? "active" : ""
-                  }`}
-                >
-                  Join
-                </button>
-              </div>
-            </div>
+       {selectedEvent && (
+  <div className="container">
+    <div className="event-details">
+      <span className="close" onClick={() => setSelectedEvent(null)}>
+        <i className="fa-solid fa-circle-xmark"></i>
+      </span>
+      <div className="img-fluid">
+        <img src={eventImg} alt="Event" />
+        <span className="date">
+          <span>{selectedEvent.date.split("/")[0]}</span>
+          <span>{selectedEvent.date.split("/")[1]}</span>
+        </span>
+      </div>
+      <div className="details">
+        <div className="row">
+          <div className="name">{selectedEvent.title}</div>
+          <div className="time">
+            <i className="fa fa-clock"> {selectedEvent.time}</i>
+          </div>
+        </div>
+        <div className="row">
+          <div className="det">{selectedEvent.details}</div>
+        </div>
+        {selectedEvent.speakers && selectedEvent.speakers.length > 0 && (
+          <div className="row speakers">
+            <h4>Speakers:</h4>
+            <ul>
+              {selectedEvent.speakers.map(s => (
+                <li key={s.speakerId}>{s.name} ({s.email})</li>
+              ))}
+            </ul>
           </div>
         )}
+       <button
+  className={`join-btn ${
+    selectedEvent.owner !== localStorage.getItem("userEmail") &&
+    new Date(selectedEvent.date.split("/").reverse().join("-")) >= today
+      ? "active"
+      : ""
+  }`}
+  onClick={() => {
+    const userId = localStorage.getItem("userId");
+    if (!userId) return alert("Please login first");
+
+    const eventDate = new Date(selectedEvent.date.split("/").reverse().join("-"));
+    if (eventDate < today) return alert("Cannot join past events");
+
+    const ticketData = {
+      userId: parseInt(userId),
+      eventId: selectedEvent.eventId,
+      qrCode: Math.random().toString(36).substring(2, 10).toUpperCase(),
+      status: "active"
+    };
+
+    fetch(`http://localhost:3000/api/tickets/user/${userId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(ticketData)
+    })
+    .then(res => res.json())
+    .then(data => {
+      alert(data.message || "Ticket created successfully");
+    })
+    .catch(err => {
+      console.error(err);
+      alert("Failed to create ticket");
+    });
+  }}
+>
+  Join
+</button>
+
+
+      </div>
+    </div>
+  </div>
+)}
+
       </main>
     </div>
   );
