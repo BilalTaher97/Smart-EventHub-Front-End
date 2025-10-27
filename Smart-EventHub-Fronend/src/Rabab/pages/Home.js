@@ -129,6 +129,13 @@ export default function Home() {
     }
   };
 
+  const formatDateTime = (dateString) => {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  return date.toLocaleString();
+};
+
+
   return (
     <div className="container">
       {/* Header navigation */}
@@ -249,7 +256,7 @@ export default function Home() {
                           </div>
                           <div className="time" style={{ marginTop: "15px" }}>
                             <span><i className="fa-solid fa-clock"></i></span>
-                            <span>{event.startDate} - {event.endDate}</span>
+                            <span> {formatDateTime(event.startDate)} - {formatDateTime(event.endDate)}</span>
                           </div>
                         </div>
                       </div>

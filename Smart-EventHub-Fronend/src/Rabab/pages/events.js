@@ -2,6 +2,9 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import eventImg from "../images/event1.jpg";
 import "../styles/calendar.css";
+import Box from '@mui/material/Box';
+import Rating from '@mui/material/Rating';
+import StarIcon from '@mui/icons-material/Star';
 
 export default function CalendarPage() {
   const today = new Date();
@@ -15,6 +18,8 @@ export default function CalendarPage() {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [joinedEventIds, setJoinedEventIds] = useState([]);
+  const [ratings, setRatings] = useState({});
+  const [hoverValues, setHoverValues] = useState({});
 
   const monthNames = [
     "January","February","March","April","May","June",
@@ -22,44 +27,49 @@ export default function CalendarPage() {
   ];
   const days = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 
+  const labels = {
+    0.5: 'Useless', 1: 'Useless+', 1.5: 'Poor', 2: 'Poor+', 2.5: 'Ok',
+    3: 'Ok+', 3.5: 'Good', 4: 'Good+', 4.5: 'Excellent', 5: 'Excellent+',
+  };
+  const getLabelText = (value) => `${value} Star${value !== 1 ? 's' : ''}, ${labels[value]}`;
+
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch all events
         const eventRes = await axios.get("http://localhost:3000/api/events", {
           headers: { Authorization: `Bearer ${accessToken}` },
-          withCredentials: true,
         });
-
         const events = eventRes.data.data.map(event => {
           const start = new Date(event.startDate);
           const end = new Date(event.endDate);
-          const dateStr = `${start.getDate()}/${monthNames[start.getMonth()].slice(0,3)}/${start.getFullYear()}`;
-          const timeStr = `${start.getHours()}:${start.getMinutes().toString().padStart(2,'0')} - ${end.getHours()}:${end.getMinutes().toString().padStart(2,'0')}`;
           return {
-            date: dateStr,
-            time: timeStr,
-            title: event.title,
-            color: "#1abc9c",
-            owner: event.createdBy,
-            details: event.description,
-            speakers: event.speakers || [],
-            eventId: event.eventId
+            ...event,
+            dateStr: `${start.getDate()}/${monthNames[start.getMonth()].slice(0,3)}/${start.getFullYear()}`,
+            timeStr: `${start.getHours()}:${start.getMinutes().toString().padStart(2,'0')} - ${end.getHours()}:${end.getMinutes().toString().padStart(2,'0')}`,
+            start,
+            color: "#1abc9c",              // restored
+    details: event.description, 
+            end,
           };
         });
-
         setTasks(events);
 
-        // Fetch user tickets
-        if (userId) {
+        if(userId) {
           const ticketRes = await axios.get(`http://localhost:3000/api/tickets/user/${userId}`, {
             headers: { Authorization: `Bearer ${accessToken}` },
           });
           setJoinedEventIds(ticketRes.data.data.map(t => t.eventId));
+
+          const recRes = await axios.get("http://localhost:3000/api/recommendations", {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          });
+          const userRatings = {};
+          recRes.data.data.forEach(r => userRatings[r.eventId] = r.score);
+          setRatings(userRatings);
         }
 
       } catch (err) {
-        console.error("Failed to fetch events or tickets:", err);
+        console.error(err);
       }
     };
 
@@ -87,29 +97,33 @@ export default function CalendarPage() {
 
   async function handleJoin(event) {
     if (!userId) return alert("Please login first");
-
-    if (event.owner === userId || joinedEventIds.includes(event.eventId)) {
-      return; // cannot join
-    }
-
-    const ticketData = {
-      userId: userId,
-      eventId: event.eventId,
-      qrCode: Math.random().toString(36).substring(2, 10).toUpperCase(),
-      status: "active"
-    };
+    if (event.createdBy === userId || joinedEventIds.includes(event.eventId)) return;
 
     try {
-      const res = await axios.post(
-        `http://localhost:3000/api/tickets/user/${userId}`,
-        ticketData,
-        { headers: { Authorization: `Bearer ${accessToken}` } }
-      );
+      const res = await axios.post(`http://localhost:3000/api/tickets/user/${userId}`, {
+        userId,
+        eventId: event.eventId,
+        qrCode: Math.random().toString(36).substring(2, 10).toUpperCase(),
+        status: "active"
+      }, { headers: { Authorization: `Bearer ${accessToken}` }});
       alert(res.data.message || "Ticket created successfully");
-      setJoinedEventIds(prev => [...prev, event.eventId]); // mark as joined
-    } catch (err) {
+      setJoinedEventIds(prev => [...prev, event.eventId]);
+    } catch(err) {
       console.error(err);
       alert("Failed to create ticket");
+    }
+  }
+
+  async function handleRatingChange(eventId, value) {
+    setRatings(prev => ({ ...prev, [eventId]: value }));
+    try {
+      await axios.post("http://localhost:3000/api/recommendations", {
+        userId,
+        eventId,
+        score: value
+      }, { headers: { Authorization: `Bearer ${accessToken}` }});
+    } catch(err) {
+      console.error("Rating submission failed", err);
     }
   }
 
@@ -123,11 +137,7 @@ export default function CalendarPage() {
         <h3>{monthNames[currentMonth]} {currentYear}</h3>
         <div className="calendar-grid">
           {Array.from({ length: lastDay }, (_, i) => i + 1).map(d => (
-            <div
-              key={d}
-              className={`day ${d === selectedDate ? "active" : ""}`}
-              onClick={() => setSelectedDate(d)}
-            >
+            <div key={d} className={`day ${d === selectedDate ? "active" : ""}`} onClick={() => setSelectedDate(d)}>
               {d}
             </div>
           ))}
@@ -138,13 +148,8 @@ export default function CalendarPage() {
         <div className="calendar-header">
           <h2>Week of {monthNames[currentMonth]} {selectedDate}, {currentYear}</h2>
           <div className="calendar-options">
-            <button
-              className={isTodaySelected ? "active" : ""}
-              onClick={() => setSelectedDate(today.getDate())}
-            >
-              Today
-            </button>
-            <select value={selectedOwner} onChange={(e) => setSelectedOwner(e.target.value)}>
+            <button className={isTodaySelected ? "active" : ""} onClick={() => setSelectedDate(today.getDate())}>Today</button>
+            <select value={selectedOwner} onChange={(e)=>setSelectedOwner(e.target.value)}>
               <option value="All">All</option>
               <option value="My">My Events</option>
             </select>
@@ -156,22 +161,17 @@ export default function CalendarPage() {
             {weekDates.map(date => {
               const dayShort = days[date.getDay() === 0 ? 6 : date.getDay() - 1];
               const dateStr = `${date.getDate()}/${monthNames[date.getMonth()].slice(0,3)}/${date.getFullYear()}`;
-              const dayTasks = filteredTasks.filter(t => t.date === dateStr);
+              const dayTasks = filteredTasks.filter(t => t.dateStr === dateStr);
 
               return (
                 <div key={dateStr} className="day-column">
                   <div className="day-header">{dayShort}</div>
                   <div className="events">
                     {dayTasks.map((t,i) => (
-                      <div
-                        key={i}
-                        className="event"
-                        style={{ backgroundColor: t.color }}
-                        onClick={() => setSelectedEvent(t)}
-                      >
+                      <div key={i} className="event" style={{ backgroundColor: t.color }} onClick={() => setSelectedEvent(t)}>
                         <strong>{t.title}</strong>
                         <p>{t.details}</p>
-                        <p>{t.time}</p>
+                        <p>{t.timeStr}</p>
                       </div>
                     ))}
                   </div>
@@ -190,20 +190,17 @@ export default function CalendarPage() {
               <div className="img-fluid">
                 <img src={eventImg} alt="Event" />
                 <span className="date">
-                  <span>{selectedEvent.date.split("/")[0]}</span>
-                  <span>{selectedEvent.date.split("/")[1]}</span>
+                  <span>{selectedEvent.dateStr.split("/")[0]}</span>
+                  <span>{selectedEvent.dateStr.split("/")[1]}</span>
                 </span>
               </div>
               <div className="details">
                 <div className="row">
                   <div className="name">{selectedEvent.title}</div>
-                  <div className="time">
-                    <i className="fa fa-clock"> {selectedEvent.time}</i>
-                  </div>
+                  <div className="time"><i className="fa fa-clock"> {selectedEvent.timeStr}</i></div>
                 </div>
-                <div className="row">
-                  <div className="det">{selectedEvent.details}</div>
-                </div>
+                <div className="row"><div className="det">{selectedEvent.details}</div></div>
+
                 {selectedEvent.speakers && selectedEvent.speakers.length > 0 && (
                   <div className="row speakers">
                     <h4>Speakers:</h4>
@@ -214,17 +211,37 @@ export default function CalendarPage() {
                     </ul>
                   </div>
                 )}
-                <button
-                  className={`join-btn ${
-                    selectedEvent.owner === userId ||
-                    joinedEventIds.includes(selectedEvent.eventId)
-                      ? ""
-                      : "active"
-                  }`}
-                  onClick={() => handleJoin(selectedEvent)}
-                >
-                  Join
-                </button>
+
+                {/* Show rating */}
+                <Box sx={{ width: 200, display: 'flex', alignItems: 'center', mt: 2 }}>
+                  <Rating
+                    name="event-rating"
+                    value={ratings[selectedEvent.eventId] || 0}
+                    precision={0.5}
+                    getLabelText={getLabelText}
+                    onChange={(e,newVal)=> {
+                      const joined = joinedEventIds.includes(selectedEvent.eventId);
+                      const ended = new Date(selectedEvent.end) < today;
+                      if(joined && ended) handleRatingChange(selectedEvent.eventId,newVal);
+                    }}
+                    onChangeActive={(e,newHover)=>setHoverValues(prev=>({...prev,[selectedEvent.eventId]:newHover}))}
+                    emptyIcon={<StarIcon style={{opacity:0.55}} fontSize="inherit"/>}
+                    readOnly={!(joinedEventIds.includes(selectedEvent.eventId) && new Date(selectedEvent.end) < today)}
+                  />
+                  <Box sx={{ ml: 2 }}>
+                    {labels[hoverValues[selectedEvent.eventId] !== undefined ? hoverValues[selectedEvent.eventId] : ratings[selectedEvent.eventId] || 0]}
+                  </Box>
+                </Box>
+
+                {/* Show Join button only if event not ended */}
+                {new Date(selectedEvent.end) >= today && (
+                  <button
+                    className={`join-btn ${selectedEvent.owner === userId || joinedEventIds.includes(selectedEvent.eventId) ? "" : "active"}`}
+                    onClick={()=>handleJoin(selectedEvent)}
+                    style={{ marginTop: "10px" }}
+                  >Join</button>
+                )}
+
               </div>
             </div>
           </div>
