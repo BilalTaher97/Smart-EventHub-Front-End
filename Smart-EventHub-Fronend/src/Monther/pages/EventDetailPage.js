@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useEvents } from '../contexts/EventsContext';
 import { useAdmin } from '../contexts/AdminContext';
+import '../styles/admin.css';
 import '../styles/event-detail.css';
 
 const EventDetailPage = () => {

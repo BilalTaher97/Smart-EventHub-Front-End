@@ -154,9 +154,9 @@ const EventForm = ({ event = null, onSubmit, onCancel }) => {
       newErrors.time = 'Event time is required';
     }
 
-    if (!formData.location.trim()) {
-      newErrors.location = 'Location is required';
-    }
+    // if (!formData.location.trim()) {
+    //   newErrors.location = 'Location is required';
+    // }
 
     if (!formData.isUnlimited && formData.maxAttendees < 1) {
       newErrors.maxAttendees = 'Maximum attendees must be at least 1';
