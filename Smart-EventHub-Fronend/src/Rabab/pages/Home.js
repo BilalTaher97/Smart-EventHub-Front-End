@@ -334,11 +334,6 @@ useEffect(() => {
                     <span className="phone">{user.phone}</span>
                   </>
                 )}
-                <div className="d-flex flex-row justify-content-center align-items-center mt-3">
-                  <span className="number">50
-                    <span className="follow">Events Attends</span>
-                  </span>
-                </div>
                 <div className="d-flex mt-2">
                   <button className="btn1 btn-dark" onClick={() => { setShowEditProfile(true); setShowProfile(false); }}>Edit Profile</button>
                 </div>
