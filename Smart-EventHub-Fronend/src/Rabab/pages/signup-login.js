@@ -39,7 +39,10 @@ export default function AuthForm() {
       localStorage.setItem("accessToken", data.accessToken);
       localStorage.setItem("userEmail", loginEmail);
       localStorage.setItem("userId", data.userId);
+      localStorage.setItem("role", data.role);
+      localStorage.setItem("justLoggedIn", "true");
       navigate(data.redirectUrl || "/home");
+      // if statement for the admin (role)
 
     } catch (error) {
       console.error(error);

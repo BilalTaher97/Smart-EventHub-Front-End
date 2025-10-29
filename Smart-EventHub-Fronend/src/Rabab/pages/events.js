@@ -60,12 +60,12 @@ export default function CalendarPage() {
           });
           setJoinedEventIds(ticketRes.data.data.map(t => t.eventId));
 
-          const recRes = await axios.get("http://localhost:3000/api/recommendations", {
-            headers: { Authorization: `Bearer ${accessToken}` },
-          });
-          const userRatings = {};
-          recRes.data.data.forEach(r => userRatings[r.eventId] = r.score);
-          setRatings(userRatings);
+          // const recRes = await axios.get("http://localhost:3000/api/recommendations", {
+          //   headers: { Authorization: `Bearer ${accessToken}` },
+          // });
+          // const userRatings = {};
+          // recRes.data.data.forEach(r => userRatings[r.eventId] = r.score);
+          // setRatings(userRatings);
         }
 
       } catch (err) {
@@ -114,18 +114,18 @@ export default function CalendarPage() {
     }
   }
 
-  async function handleRatingChange(eventId, value) {
-    setRatings(prev => ({ ...prev, [eventId]: value }));
-    try {
-      await axios.post("http://localhost:3000/api/recommendations", {
-        userId,
-        eventId,
-        score: value
-      }, { headers: { Authorization: `Bearer ${accessToken}` }});
-    } catch(err) {
-      console.error("Rating submission failed", err);
-    }
-  }
+  // async function handleRatingChange(eventId, value) {
+  //   setRatings(prev => ({ ...prev, [eventId]: value }));
+  //   try {
+  //     await axios.post("http://localhost:3000/api/recommendations", {
+  //       userId,
+  //       eventId,
+  //       score: value
+  //     }, { headers: { Authorization: `Bearer ${accessToken}` }});
+  //   } catch(err) {
+  //     console.error("Rating submission failed", err);
+  //   }
+  // }
 
   const filteredTasks = tasks.filter(t =>
     selectedOwner === "All" ? true : joinedEventIds.includes(t.eventId)
@@ -212,7 +212,7 @@ export default function CalendarPage() {
                   </div>
                 )}
 
-                {/* Show rating */}
+                {/* Show rating
                 <Box sx={{ width: 200, display: 'flex', alignItems: 'center', mt: 2 }}>
                   <Rating
                     name="event-rating"
@@ -231,7 +231,7 @@ export default function CalendarPage() {
                   <Box sx={{ ml: 2 }}>
                     {labels[hoverValues[selectedEvent.eventId] !== undefined ? hoverValues[selectedEvent.eventId] : ratings[selectedEvent.eventId] || 0]}
                   </Box>
-                </Box>
+                </Box> */}
 
                 {/* Show Join button only if event not ended */}
                 {new Date(selectedEvent.end) >= today && (

@@ -7,7 +7,7 @@ import user3 from "../images/3.jpg";
 import user4 from "../images/4.jpg";
 import { useNavigate } from "react-router-dom";
 import React, { useRef, useEffect, useState } from "react";
-import axios from "axios";
+import axios, { all } from "axios";
 
 export default function Home() {
   const [menuActive, setMenuActive] = useState(false);
@@ -16,6 +16,7 @@ export default function Home() {
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [user, setUser] = useState(null);
   const [latestEvents, setLatestEvents] = useState([]);
+  
   const [editForm, setEditForm] = useState({
     fullName: "",
     passwordHash: "",
@@ -27,6 +28,47 @@ export default function Home() {
   const sliderRef = useRef(null);
 
   const goToEvents = () => navigate("./events");
+
+  const [showRecommendation, setShowRecommendation] = useState(false);
+  const [recommendedEvents, setRecommendedEvents] = useState([]);
+
+
+const handleShowRecommended = async () => {
+  try {
+    const userId = localStorage.getItem("userId");
+    const token = localStorage.getItem("accessToken");
+    if (!userId || !token) return;
+
+    const recRes = await axios.get(`http://localhost:3000/api/recommendations/${userId}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const recommendedIds = recRes.data?.data?.map(r => Number(r.eventId)) || [];
+
+    if (recommendedIds.length === 0) return alert("No recommendations available");
+
+    const eventsRes = await axios.get("http://localhost:3000/api/events", {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const allEvents = eventsRes.data?.data || [];
+
+    const recEvents = allEvents.filter(event => recommendedIds.includes(event.eventId));
+
+    setRecommendedEvents(recEvents);
+    setShowRecommendation(true);
+  } catch (err) {
+    console.error("Error fetching recommended events:", err);
+    alert("Failed to load recommendations");
+  }
+};
+
+useEffect(() => {
+  const justLoggedIn = localStorage.getItem("justLoggedIn");
+  if (justLoggedIn) {
+    handleShowRecommended();  // fetch and show recommendations
+    localStorage.removeItem("justLoggedIn"); // prevent next automatic open
+  }
+}, []);
+
 
   // Fetch latest events
   useEffect(() => {
@@ -267,6 +309,7 @@ export default function Home() {
               </div>
             ))}
             <div className="all-events">
+              <button onClick={handleShowRecommended}>Recommended</button>
               <button onClick={goToEvents}>see all <i className="fa-solid fa-arrow-right"></i></button>
             </div>
           </div>
@@ -349,6 +392,24 @@ export default function Home() {
             </div>
           </div>
         </section>
+
+{/* recommendation events section */}
+        {showRecommendation && (
+  <div className="recommendation-popup">
+    <div className="popup-content">
+      <span className="close" onClick={() => setShowRecommendation(false)}>&times;</span>
+      <h3>Recommended Events</h3>
+      {recommendedEvents.map(event => (
+        <div key={event.eventId} className="event-card">
+          <h4>{event.title}</h4>
+          <p>{event.description}</p>
+          <p>{formatDateTime(event.startDate)} - {formatDateTime(event.endDate)}</p>
+          <button onClick={() => goToEvents()}>Go To calendar</button>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
 
         {/* Footer */}
         <footer id="contact-us">

@@ -111,7 +111,8 @@
    margin-bottom: 10px;
    font-weight: 900;
 }
-.home-page .welcoming .btn{
+.home-page .welcoming .btn,
+.home-page .event-card button{
    border: none;
    border-radius: 8px;
    padding: 10px 1.5rem;
@@ -934,6 +935,87 @@
     text-decoration: none;
     letter-spacing: 0.5px;
 }
+.home-page .recommendation-popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 100000;
+}
+.home-page .event-card{
+  padding: 15px 10px;
+  
+}
+
+.home-page .popup-content {
+  position: relative;
+  width: 320px;
+  height: 500px;
+  margin: auto;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #292929aa 0%, #191919cc 50%);
+  backdrop-filter: blur(8px);
+  box-shadow: inset 0 2px 2px 0 #e7c4a088, inset 0 -2px 2px 0 #0003;
+  color: #ccc;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+  overflow: hidden;
+}
+.home-page .popup-content h3{
+    border-bottom: 2px solid var(--pink);
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+    margin: 8px 0;
+    font-size: 1.3em;
+}
+.home-page .event-card p{
+  color: #898989;
+}
+.home-page .event-card p:first-of-type{
+      margin-bottom: 15px;
+}
+.home-page .event-card p:last-of-type{
+      margin-bottom: 5px;
+      font-size: 14px;
+}
+.home-page .event-card button{
+  /* margin-top: 20px;
+  margin-bottom: 20px;
+  font-size: 15px; */
+  width: fit-content;
+  border-radius: 100px;
+  padding: 8px 36px;
+  margin-top: 12px;
+  background: rgba(255,255,255,0.12);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+.home-page .event-card button:hover {
+  background: rgba(255,255,255,0.2);
+  box-shadow: 0 0 10px rgba(255,255,255,0.2);
+}
+.home-page .popup-content .close {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.home-page .event-card {
+  margin-bottom: 15px;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 10px;
+}
+
 footer ul li a:hover {
   transform: translateY(-20px);
   color: #fff;
