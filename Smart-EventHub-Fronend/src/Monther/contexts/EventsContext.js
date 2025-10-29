@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import { eventService } from '../services/eventService';
+import { mapBackendToFrontend, mapFrontendToBackend } from '../utils/dataMapper';
 
 const EventsContext = createContext();
 
@@ -8,12 +10,13 @@ const eventsReducer = (state, action) => {
       return {
         ...state,
         events: action.payload,
-        loading: false
+        loading: false,
+        initialized: true
       };
     case 'ADD_EVENT':
       return {
         ...state,
-        events: [...state.events, { ...action.payload, id: Date.now().toString() }],
+        events: [...state.events, action.payload],
         loading: false
       };
     case 'UPDATE_EVENT':
@@ -47,114 +50,106 @@ const eventsReducer = (state, action) => {
 };
 
 const initialState = {
-  events: [
-    {
-      id: '1',
-      title: 'UX Conference 2025',
-      description: 'Join us for the biggest UX conference of the year featuring industry leaders and innovative workshops.',
-      date: '2025-11-19',
-      endDate: '2025-11-25',
-      time: '09:00',
-      location: 'Amman City, Jordan',
-      category: 'Conference',
-      image: '/images/ux-conference.jpg',
-      status: 'upcoming',
-      attendees: 250,
-      maxAttendees: 500,
-      price: 150,
-      speakers: [
-        { id: 1, name: 'Dr. Sarah Johnson', title: 'Lead UX Designer at Google' },
-        { id: 2, name: 'Ahmed Al-Rashid', title: 'Design Director at Meta' }
-      ],
-      createdAt: '2024-10-15',
-      updatedAt: '2024-10-15'
-    },
-    {
-      id: '2',
-      title: 'React Workshop',
-      description: 'Hands-on workshop covering advanced React patterns and best practices for modern web development.',
-      date: '2025-12-10',
-      endDate: '2025-12-10',
-      time: '10:00',
-      location: 'Tech Hub, Amman',
-      category: 'Workshop',
-      image: '/images/react-workshop.jpg',
-      status: 'upcoming',
-      attendees: 45,
-      maxAttendees: 50,
-      price: 75,
-      speakers: [
-        { id: 1, name: 'Omar Khalil', title: 'Senior React Developer' }
-      ],
-      createdAt: '2024-10-16',
-      updatedAt: '2024-10-16'
-    }
-  ],
+  events: [],
   loading: false,
-  error: null
+  error: null,
+  initialized: false
 };
 
 export const EventsProvider = ({ children }) => {
   const [state, dispatch] = useReducer(eventsReducer, initialState);
 
+  // Load events from API on mount
   useEffect(() => {
-    const savedEvents = localStorage.getItem('eventHub_events');
-    if (savedEvents) {
+    const loadEvents = async () => {
+      if (state.initialized) return;
+      
+      dispatch({ type: 'SET_LOADING', payload: true });
+      
       try {
-        const parsedEvents = JSON.parse(savedEvents);
-        dispatch({ type: 'SET_EVENTS', payload: parsedEvents });
+        const response = await eventService.getAllEvents();
+        
+        if (response.success) {
+          // Map backend events to frontend format
+          const mappedEvents = response.data.map(event => mapBackendToFrontend(event));
+          dispatch({ type: 'SET_EVENTS', payload: mappedEvents });
+        } else {
+          dispatch({ type: 'SET_ERROR', payload: response.message });
+        }
       } catch (error) {
-        console.error('Error loading saved events:', error);
+        console.error('Error loading events:', error);
+        dispatch({ type: 'SET_ERROR', payload: 'Failed to load events' });
       }
-    }
-  }, []);
+    };
 
-  useEffect(() => {
-    localStorage.setItem('eventHub_events', JSON.stringify(state.events));
-  }, [state.events]);
+    loadEvents();
+  }, [state.initialized]);
 
-  const addEvent = (eventData) => {
+  const addEvent = async (eventData) => {
     dispatch({ type: 'SET_LOADING', payload: true });
+    
     try {
-      const newEvent = {
-        ...eventData,
-        createdAt: new Date().toISOString().split('T')[0],
-        updatedAt: new Date().toISOString().split('T')[0],
-        attendees: 0,
-        status: new Date(eventData.date) > new Date() ? 'upcoming' : 'past'
-      };
-      dispatch({ type: 'ADD_EVENT', payload: newEvent });
-      return { success: true, message: 'Event created successfully!' };
+      // Map frontend data to backend format
+      const backendData = mapFrontendToBackend(eventData);
+      const response = await eventService.createEvent(backendData);
+      
+      if (response.success) {
+        // Map response back to frontend format and add to state
+        const frontendEvent = mapBackendToFrontend(response.data);
+        dispatch({ type: 'ADD_EVENT', payload: frontendEvent });
+        return { success: true, message: response.message };
+      } else {
+        dispatch({ type: 'SET_ERROR', payload: response.message });
+        return { success: false, message: response.message };
+      }
     } catch (error) {
-      dispatch({ type: 'SET_ERROR', payload: error.message });
-      return { success: false, message: error.message };
-    }
-  };
-
-  const updateEvent = (eventData) => {
-    dispatch({ type: 'SET_LOADING', payload: true });
-    try {
-      const updatedEvent = {
-        ...eventData,
-        updatedAt: new Date().toISOString().split('T')[0],
-        status: new Date(eventData.date) > new Date() ? 'upcoming' : 'past'
-      };
-      dispatch({ type: 'UPDATE_EVENT', payload: updatedEvent });
-      return { success: true, message: 'Event updated successfully!' };
-    } catch (error) {
-      dispatch({ type: 'SET_ERROR', payload: error.message });
-      return { success: false, message: error.message };
+      const errorMessage = 'Failed to create event';
+      dispatch({ type: 'SET_ERROR', payload: errorMessage });
+      return { success: false, message: errorMessage };
     }
   };
 
-  const deleteEvent = (eventId) => {
+  const updateEvent = async (eventData) => {
     dispatch({ type: 'SET_LOADING', payload: true });
+    
     try {
-      dispatch({ type: 'DELETE_EVENT', payload: eventId });
-      return { success: true, message: 'Event deleted successfully!' };
+      // Map frontend data to backend format
+      const backendData = mapFrontendToBackend(eventData);
+      const response = await eventService.updateEvent(eventData.id, backendData);
+      
+      if (response.success) {
+        // Map response back to frontend format and update state
+        const frontendEvent = mapBackendToFrontend(response.data);
+        dispatch({ type: 'UPDATE_EVENT', payload: frontendEvent });
+        return { success: true, message: response.message };
+      } else {
+        dispatch({ type: 'SET_ERROR', payload: response.message });
+        return { success: false, message: response.message };
+      }
     } catch (error) {
-      dispatch({ type: 'SET_ERROR', payload: error.message });
-      return { success: false, message: error.message };
+      const errorMessage = 'Failed to update event';
+      dispatch({ type: 'SET_ERROR', payload: errorMessage });
+      return { success: false, message: errorMessage };
+    }
+  };
+
+  const deleteEvent = async (eventId) => {
+    dispatch({ type: 'SET_LOADING', payload: true });
+    
+    try {
+      const response = await eventService.deleteEvent(eventId);
+      
+      if (response.success) {
+        dispatch({ type: 'DELETE_EVENT', payload: eventId });
+        return { success: true, message: response.message };
+      } else {
+        dispatch({ type: 'SET_ERROR', payload: response.message });
+        return { success: false, message: response.message };
+      }
+    } catch (error) {
+      const errorMessage = 'Failed to delete event';
+      dispatch({ type: 'SET_ERROR', payload: errorMessage });
+      return { success: false, message: errorMessage };
     }
   };
 
@@ -172,13 +167,37 @@ export const EventsProvider = ({ children }) => {
     return state.events.filter(event => event.status === status);
   };
 
-  const searchEvents = (query) => {
-    const lowercaseQuery = query.toLowerCase();
-    return state.events.filter(event => 
-      event.title.toLowerCase().includes(lowercaseQuery) ||
-      event.description.toLowerCase().includes(lowercaseQuery) ||
-      event.location.toLowerCase().includes(lowercaseQuery)
-    );
+  const searchEvents = async (query) => {
+    if (!query.trim()) {
+      return state.events;
+    }
+    
+    try {
+      const response = await eventService.searchEvents(query);
+      
+      if (response.success) {
+        // Map backend events to frontend format
+        return response.data.map(event => mapBackendToFrontend(event));
+      } else {
+        console.error('Search failed:', response.message);
+        // Fallback to local search
+        const lowercaseQuery = query.toLowerCase();
+        return state.events.filter(event => 
+          event.title.toLowerCase().includes(lowercaseQuery) ||
+          event.description.toLowerCase().includes(lowercaseQuery) ||
+          event.location.toLowerCase().includes(lowercaseQuery)
+        );
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+      // Fallback to local search
+      const lowercaseQuery = query.toLowerCase();
+      return state.events.filter(event => 
+        event.title.toLowerCase().includes(lowercaseQuery) ||
+        event.description.toLowerCase().includes(lowercaseQuery) ||
+        event.location.toLowerCase().includes(lowercaseQuery)
+      );
+    }
   };
 
   const value = {

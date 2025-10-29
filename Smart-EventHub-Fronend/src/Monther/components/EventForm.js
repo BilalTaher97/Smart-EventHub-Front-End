@@ -188,9 +188,10 @@ const EventForm = ({ event = null, onSubmit, onCancel }) => {
 
       let result;
       if (event) {
-        result = updateEvent({ ...event, ...submitData });
+        // Include the event ID for updates
+        result = await updateEvent({ ...event, ...submitData });
       } else {
-        result = addEvent(submitData);
+        result = await addEvent(submitData);
       }
 
       if (result.success) {
