@@ -6,6 +6,7 @@ import AdminDashboard from "./Monther/pages/AdminDashboard";
 import EventDetailPage from "./Monther/pages/EventDetailPage";
 import { EventsProvider } from "./Monther/contexts/EventsContext";
 import { AdminProvider } from "./Monther/contexts/AdminContext";
+import Events from "./Rabab/pages/events";
 
 export default function App() {
   return (
@@ -14,6 +15,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<AuthForm />} />
           <Route path="/home" element={<Home />} />
+           <Route path="/home/events" element={<Events />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route 
             path="/admin/events/:id" 
@@ -26,5 +28,6 @@ export default function App() {
         </Routes>
       </Router>
     </EventsProvider>
+
   );
 }
