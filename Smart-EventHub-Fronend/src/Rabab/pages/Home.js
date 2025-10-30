@@ -1,6 +1,7 @@
 import "../styles/home.css";
 import aboutImg from "../images/Our Servese.png";
 import firstSpeacker from "../images/mic.png";
+import profile from "../images/profile.png";
 import user1 from "../images/1.jpg";
 import user2 from "../images/2.jpg";
 import user3 from "../images/3.jpg";
@@ -161,7 +162,7 @@ useEffect(() => {
       const res = await axios.put("http://localhost:3000/api/auth/profile", editForm, {
         headers: { Authorization: `Bearer ${token}` }
       });
-
+      console.log();
       alert(res.data.message || "Profile updated");
       setShowEditProfile(false);
       setShowProfile(true);
@@ -283,7 +284,7 @@ useEffect(() => {
                         <div className="nametroduction">
                           <div className="name">
                             On {event.startDate}
-                            <div><button>Join us</button></div>
+                            <div><button>Click see all, then join an event.</button></div>
                             <img src={firstSpeacker} alt="" />
                           </div>
                         </div>
@@ -323,8 +324,8 @@ useEffect(() => {
                 <i className="fa-solid fa-circle-xmark close" onClick={() => setShowProfile(false)}></i>
               </span>
               <div className="image d-flex flex-column justify-content-center align-items-center">
-                <button className="btn btn-secondary">
-                  <img src="https://i.imgur.com/wvxPV9S.png" height="100" width="100" />
+                <button className="btn btn-secondary" style={{backgroundColor:"#b6b5beff"}}>
+                  <img src={profile} height="100" width="100" alt="profile img" />
                 </button>
                 {user && (
                   <>
